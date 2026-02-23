@@ -233,6 +233,7 @@ function unlock(){
   setTimeout(()=>scanLocked=false,scanDelay);
 }
 
+function unlock(){setTimeout(()=>scanLocked=false,scanDelay);}
 new Html5QrcodeScanner("reader",{fps:10,qrbox:250}).render(onScanSuccess);
 
 function markAllAbsent(){
