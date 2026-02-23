@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>QR Attendance System</title>
+<title>QR Attendance System - Advanced</title>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
@@ -58,12 +58,12 @@ button {
 
 <body>
 
-<h2>QR Attendance System</h2>
+<h2>QR Attendance System (Advanced)</h2>
 
-<button onclick="setMode('in')">🟢 Time In</button>
-<button onclick="setMode('out')">🔵 Time Out</button>
-
+<button class="inBtn" onclick="setMode('in')">🟢 Time In</button>
+<button class="outBtn" onclick="setMode('out')">🔵 Time Out</button>
 <h3 id="modeLabel">Mode: Time In</h3>
+
 <div id="scanMessage"></div>
 <div id="reader"></div>
 
@@ -71,43 +71,37 @@ button {
 <tr>
   <th>Student Name</th>
   <th>Date</th>
-  <th>Time</th>
+  <th>Time In</th>
+  <th>Time Out</th>
   <th>Status</th>
 </tr>
 </table>
 
-<br>
-<button onclick="exportToCSV()">⬇ Export to Excel</button>
-<button onclick="markAllAbsent()">Mark Remaining as Absent</button>
+<button onclick="markAllAbsent()">Mark Unscanned as Absent</button>
+<button onclick="exportToCSV()">Export to Excel</button>
 <button class="logout" onclick="logout()">Logout</button>
 
 <script>
-let mode = "in"; // default Time In
+let mode="in";
+let scanLocked=false;
+let scanDelay=5000;
 
-function setMode(selectedMode){
-  mode = selectedMode;
-  document.getElementById("modeLabel").innerText =
-    mode === "in" ? "Mode: Time In" : "Mode: Time Out";
+function setMode(m){
+  mode=m;
+  document.getElementById("modeLabel").innerText=
+    mode==="in"?"Mode: Time In":"Mode: Time Out";
 }
 
-let scanLocked = false;
-let scanDelay = 6000;
-
-// 🔊 BEEP
-function beepSuccess(){
-  let ctx=new (window.AudioContext||window.webkitAudioContext)();
+function beep(freq,duration){
+  let ctx=new(window.AudioContext||window.webkitAudioContext)();
   let o=ctx.createOscillator();
-  o.frequency.value=900;o.connect(ctx.destination);o.start();
-  setTimeout(()=>o.stop(),150);
-}
-function beepError(){
-  let ctx=new (window.AudioContext||window.webkitAudioContext)();
-  let o=ctx.createOscillator();
-  o.frequency.value=300;o.connect(ctx.destination);o.start();
-  setTimeout(()=>o.stop(),250);
+  o.frequency.value=freq;
+  o.connect(ctx.destination);
+  o.start();
+  setTimeout(()=>o.stop(),duration);
 }
 
-const students = {
+const students={
   "104971140002": { name: "Amoranto Jaz Chine Kenth" },
   "158542150101": { name: "Angel Geliane Q." },
   "136473150058": { name: "Arago Chris Justin P." },
@@ -151,13 +145,15 @@ const students = {
   "104769140174": { name: "Usero Rhian Stephanie Dc." }
 };
 
-// STATUS LOGIC
 function getStatus(now){
-  let presentCutoff=new Date(); presentCutoff.setHours(6,30,0,0);
-  let absentCutoff=new Date(); absentCutoff.setHours(12,0,0,0);
+  let presentCutoff=new Date();
+  presentCutoff.setHours(6,30,0,0);
 
-  if(now<=presentCutoff) return "Present";
-  if(now<absentCutoff) return "Late";
+  let absentCutoff=new Date();
+  absentCutoff.setHours(12,0,0,0);
+
+  if(now<=presentCutoff)return "Present";
+  if(now<absentCutoff)return "Late";
   return "Absent";
 }
 
@@ -165,79 +161,100 @@ function onScanSuccess(decodedText){
   if(scanLocked)return;
   scanLocked=true;
 
-  let table=document.getElementById("attendanceTable");
   let msg=document.getElementById("scanMessage");
+  let table=document.getElementById("attendanceTable");
   let student=students[decodedText];
 
   if(!student){
     msg.innerText="❌ Unknown QR";
     msg.className="error";
-    beepError(); unlock(); return;
+    beep(300,200);
+    unlock();
+    return;
   }
 
   let name=student.name;
   let now=new Date();
+  let dateStr=now.toLocaleDateString();
+  let timeStr=now.toLocaleTimeString();
 
-  // CHECK kung existing na
+  // CHECK existing row
   for(let i=1;i<table.rows.length;i++){
     if(table.rows[i].cells[0].innerText===name){
 
-      // ✅ If Time Out → update time only
-      if(mode==="out"){
-        table.rows[i].cells[2].innerText = now.toLocaleTimeString();
-        msg.innerText="⏰ Time Out Recorded: "+name;
-        msg.className="success";
-        beepSuccess(); unlock(); return;
+      if(mode==="in"){
+        msg.innerText="⚠ Already Timed In";
+        beep(300,200);
+        unlock();
+        return;
       }
 
-      msg.innerText="⚠ Already Time In: "+name;
-      msg.className="error";
-      beepError(); unlock(); return;
+      if(mode==="out"){
+        if(table.rows[i].cells[3].innerText!==""){
+          msg.innerText="⚠ Already Timed Out";
+          beep(300,200);
+          unlock();
+          return;
+        }
+
+        table.rows[i].cells[3].innerText=timeStr;
+        msg.innerText="⏰ Time Out Recorded";
+        beep(900,150);
+        unlock();
+        return;
+      }
     }
   }
 
-  // ✅ NEW TIME IN ENTRY
+  // NEW ENTRY (Time In only)
   if(mode==="in"){
     let status=getStatus(now);
 
     let row=table.insertRow();
     row.insertCell(0).innerText=name;
-    row.insertCell(1).innerText=now.toLocaleDateString();
-    row.insertCell(2).innerText=now.toLocaleTimeString();
-    row.insertCell(3).innerText=status;
-    row.cells[3].className=status.toLowerCase();
+    row.insertCell(1).innerText=dateStr;
+    row.insertCell(2).innerText=timeStr;
+    row.insertCell(3).innerText="";
+    row.insertCell(4).innerText=status;
+    row.cells[4].className=status.toLowerCase();
 
-    msg.innerText="✅ "+name+" ("+status+")";
-    msg.className="success";
-    beepSuccess();
+    msg.innerText="✅ Time In Success ("+status+")";
+    beep(900,150);
+  }
+  else{
+    msg.innerText="⚠ Must Time In first";
+    beep(300,200);
   }
 
   unlock();
 }
 
-function unlock(){setTimeout(()=>scanLocked=false,scanDelay);}
+function unlock(){
+  setTimeout(()=>scanLocked=false,scanDelay);
+}
+
 new Html5QrcodeScanner("reader",{fps:10,qrbox:250}).render(onScanSuccess);
 
-// MARK ABSENT
 function markAllAbsent(){
   let table=document.getElementById("attendanceTable");
   let scanned=[...table.rows].slice(1).map(r=>r.cells[0].innerText);
   let now=new Date();
+  let dateStr=now.toLocaleDateString();
 
   for(let id in students){
     let name=students[id].name;
     if(!scanned.includes(name)){
       let row=table.insertRow();
       row.insertCell(0).innerText=name;
-      row.insertCell(1).innerText=now.toLocaleDateString();
-      row.insertCell(2).innerText="-";
-      row.insertCell(3).innerText="Absent";
-      row.cells[3].className="absent";
+      row.insertCell(1).innerText=dateStr;
+      row.insertCell(2).innerText="";
+      row.insertCell(3).innerText="";
+      row.insertCell(4).innerText="Absent";
+      row.cells[4].className="absent";
     }
   }
 }
 
-// EXPORT
 function exportToCSV(){
   let rows=[...document.querySelectorAll("#attendanceTable tr")];
   let csv=rows.map(r=>[...r.cells].map(c=>c.innerText).join(",")).join("\n");
@@ -248,10 +265,10 @@ function exportToCSV(){
   a.click();
 }
 
-// LOGOUT
 function logout(){
-  if(confirm("Logout?")) window.location="index.html";
+  if(confirm("Logout?"))window.location="index.html";
 }
 </script>
+
 </body>
 </html>
