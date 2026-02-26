@@ -82,16 +82,28 @@ button {
 <button class="logout" onclick="logout()">Logout</button>
 
 <script>
+/* =======================
+   CONFIG
+======================= */
 let mode="in";
 let scanLocked=false;
 let scanDelay=5000;
 
+const EXPIRY_HOURS = 24;
+const EXPIRY_MS = EXPIRY_HOURS * 60 * 60 * 1000;
+
+/* =======================
+   MODE
+======================= */
 function setMode(m){
   mode=m;
-  document.getElementById("modeLabel").innerText=
-    mode==="in"?"Mode: Time In":"Mode: Time Out";
+  document.getElementById("modeLabel").innerText =
+    mode==="in" ? "Mode: Time In" : "Mode: Time Out";
 }
 
+/* =======================
+   SOUND
+======================= */
 function beep(freq,duration){
   let ctx=new(window.AudioContext||window.webkitAudioContext)();
   let o=ctx.createOscillator();
@@ -101,7 +113,10 @@ function beep(freq,duration){
   setTimeout(()=>o.stop(),duration);
 }
 
-const students={
+/* =======================
+   STUDENT LIST (UNCHANGED)
+======================= */
+const students = { /* SAME STUDENT OBJECT MO */ 
   "104971140002": { name: "Amoranto Jaz Chine Kenth" },
   "158542150101": { name: "Angel Geliane Q." },
   "136473150058": { name: "Arago Chris Justin P." },
@@ -130,7 +145,6 @@ const students={
   "105972140014": { name: "Perez Jerome B." },
   "158528140038": { name: "Rivera Cyruz J." },
   "104766140347": { name: "Tamayo Daril Miguel B." },
-
   "158538130309": { name: "Acibal Kc T." },
   "103508140012": { name: "Azarcon Ma. Ashley Dhenize J." },
   "127524140010": { name: "Balaba Kate Jannelle G." },
@@ -145,20 +159,50 @@ const students={
   "104769140174": { name: "Usero Rhian Stephanie Dc." }
 };
 
+/* =======================
+   STATUS LOGIC
+======================= */
 function getStatus(now){
   let presentCutoff=new Date();
   presentCutoff.setHours(6,30,0,0);
-
   let absentCutoff=new Date();
   absentCutoff.setHours(12,0,0,0);
-
   if(now<=presentCutoff)return "Present";
   if(now<absentCutoff)return "Late";
   return "Absent";
 }
 
+/* =======================
+   SAVE / LOAD (24H EXPIRY)
+======================= */
+function saveAttendance(){
+  localStorage.setItem(
+    "attendance_data",
+    document.getElementById("attendanceTable").innerHTML
+  );
+  if(!localStorage.getItem("attendance_time")){
+    localStorage.setItem("attendance_time", Date.now());
+  }
+}
+
+function loadAttendance(){
+  let t = localStorage.getItem("attendance_time");
+  if(t && Date.now()-t > EXPIRY_MS){
+    localStorage.removeItem("attendance_data");
+    localStorage.removeItem("attendance_time");
+    return;
+  }
+  let data = localStorage.getItem("attendance_data");
+  if(data){
+    document.getElementById("attendanceTable").innerHTML = data;
+  }
+}
+
+/* =======================
+   SCAN LOGIC
+======================= */
 function onScanSuccess(decodedText){
-  if(scanLocked)return;
+  if(scanLocked) return;
   scanLocked=true;
 
   let msg=document.getElementById("scanMessage");
@@ -169,8 +213,7 @@ function onScanSuccess(decodedText){
     msg.innerText="❌ Unknown QR";
     msg.className="error";
     beep(300,200);
-    unlock();
-    return;
+    unlock(); return;
   }
 
   let name=student.name;
@@ -178,38 +221,30 @@ function onScanSuccess(decodedText){
   let dateStr=now.toLocaleDateString();
   let timeStr=now.toLocaleTimeString();
 
-  // CHECK existing row
   for(let i=1;i<table.rows.length;i++){
     if(table.rows[i].cells[0].innerText===name){
-
       if(mode==="in"){
         msg.innerText="⚠ Already Timed In";
         beep(300,200);
-        unlock();
-        return;
+        unlock(); return;
       }
-
       if(mode==="out"){
         if(table.rows[i].cells[3].innerText!==""){
           msg.innerText="⚠ Already Timed Out";
           beep(300,200);
-          unlock();
-          return;
+          unlock(); return;
         }
-
         table.rows[i].cells[3].innerText=timeStr;
         msg.innerText="⏰ Time Out Recorded";
         beep(900,150);
-        unlock();
-        return;
+        saveAttendance();
+        unlock(); return;
       }
     }
   }
 
-  // NEW ENTRY (Time In only)
   if(mode==="in"){
     let status=getStatus(now);
-
     let row=table.insertRow();
     row.insertCell(0).innerText=name;
     row.insertCell(1).innerText=dateStr;
@@ -217,15 +252,13 @@ function onScanSuccess(decodedText){
     row.insertCell(3).innerText="";
     row.insertCell(4).innerText=status;
     row.cells[4].className=status.toLowerCase();
-
     msg.innerText="✅ Time In Success ("+status+")";
     beep(900,150);
-  }
-  else{
+    saveAttendance();
+  } else {
     msg.innerText="⚠ Must Time In first";
     beep(300,200);
   }
-
   unlock();
 }
 
@@ -233,27 +266,26 @@ function unlock(){
   setTimeout(()=>scanLocked=false,scanDelay);
 }
 
-function unlock(){setTimeout(()=>scanLocked=false,scanDelay);}
-new Html5QrcodeScanner("reader",{fps:10,qrbox:250}).render(onScanSuccess);
-
+/* =======================
+   OTHER FUNCTIONS
+======================= */
 function markAllAbsent(){
   let table=document.getElementById("attendanceTable");
   let scanned=[...table.rows].slice(1).map(r=>r.cells[0].innerText);
-  let now=new Date();
-  let dateStr=now.toLocaleDateString();
-
+  let now=new Date().toLocaleDateString();
   for(let id in students){
     let name=students[id].name;
     if(!scanned.includes(name)){
-      let row=table.insertRow();
-      row.insertCell(0).innerText=name;
-      row.insertCell(1).innerText=dateStr;
-      row.insertCell(2).innerText="";
-      row.insertCell(3).innerText="";
-      row.insertCell(4).innerText="Absent";
-      row.cells[4].className="absent";
+      let r=table.insertRow();
+      r.insertCell(0).innerText=name;
+      r.insertCell(1).innerText=now;
+      r.insertCell(2).innerText="";
+      r.insertCell(3).innerText="";
+      r.insertCell(4).innerText="Absent";
+      r.cells[4].className="absent";
     }
   }
+  saveAttendance();
 }
 
 function exportToCSV(){
@@ -267,9 +299,16 @@ function exportToCSV(){
 }
 
 function logout(){
-  if(confirm("Logout?"))window.location="index.html";
+  if(confirm("Logout?")) window.location="index.html";
 }
+
+/* =======================
+   INIT
+======================= */
+loadAttendance();
+new Html5QrcodeScanner("reader",{fps:10,qrbox:250}).render(onScanSuccess);
 </script>
+
 <h4> <a href="https://quickchart.io/qr-code-api/">For new students create your QR code here.</h4>
 
 </body>
