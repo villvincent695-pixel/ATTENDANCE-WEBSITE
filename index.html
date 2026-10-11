@@ -8,30 +8,64 @@
 <style>
 body {
   margin: 0;
-  font-family:courier;
+  font-family: courier;
+  min-height: 100vh;
+  background-color: #1b2a6b;
   background-image: url(THS-Attendance.jpg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 /* HEADER */
 header {
-  background-color: #2c3e50;
+  background: linear-gradient(135deg, #2c3e50, #1f2d3a);
   color: white;
-  padding: 30px;
+  padding: 40px 20px 30px;
   text-align: center;
+  border-bottom: 4px solid #3AAFA9;
+}
+
+header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 9vw, 3rem);
+  letter-spacing: 2px;
+}
+
+header p {
+  margin: 10px 0 0;
+  font-size: clamp(0.95rem, 3.6vw, 1.2rem);
+  color: #DEF2F1;
+  letter-spacing: 1px;
 }
 
 /* NAV */
 nav {
-  background-color: White ;
-  padding: 12px;
-  text-align: center;
+  background-color: white;
+  padding: 14px 10px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
 nav a {
-  color: Black;
+  padding: 10px 20px;
+  border-radius: 999px;
+  color: black;
   text-decoration: none;
-  margin: 0 10px;
   font-weight: bold;
+  font-size: 1.05rem;
+}
+
+nav a:hover {
+  background-color: #DEF2F1;
+}
+
+nav a.active {
+  background-color: #3AAFA9;
+  color: white;
 }
 
 .login-section {
@@ -78,31 +112,55 @@ nav a {
   background-color: white;
 }
 
+/* LOGIN MESSAGE */
+#message {
+  display: none;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+#message.success {
+  display: block;
+  background: #d4f7df;
+  color: #14632e;
+}
+
+#message.error {
+  display: block;
+  background: #fde2e2;
+  color: #9b1c1c;
+}
+
 </style>
 </head>
 
 <body>
 
 <header>
-  <h1>THS Annex Web-Based Automated Attendance System</h1>
+  <h1>THS Annex</h1>
+  <p>Web-Based Automated Attendance System</p>
 </header>
 
 <nav>
-  
-  <h2><a href="about.html">About</a>
-  Home
- <a href="Contact.html">Contact</a></h2>
+  <a href="about.html">About</a>
+  <a href="index.html" class="active">Home</a>
+  <a href="Contact.html">Contact</a>
 </nav>
 
 <div class="login-section">
   <div class="login-box">
     <h1>Login</h1>
 
-    <form onsubmit="return login()">
-      <input type="text" id="username" placeholder="Username" required>
-      <input type="password" id="password" placeholder="Password" required>
+    <form onsubmit="return login()" novalidate>
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
       <button type="submit">Login</button>
     </form>
+
+    <div id="message" role="alert"></div>
 
   </div>
 </div>
@@ -111,15 +169,37 @@ nav a {
 </footer>
 
 <script>
-function login() {
-  var user = document.getElementById("username").value;
-  var pass = document.getElementById("password").value;
+function showError(text, field) {
+  var message = document.getElementById("message");
+  message.className = "error";
+  message.textContent = text;
+  if (field) field.focus();
+}
 
-  if (user === "TSHS" && pass === "1234") {
-    alert("Login Successful!");
-    window.location.href = "ccc.html";
+function login() {
+  var userInput = document.getElementById("username");
+  var passInput = document.getElementById("password");
+  var message = document.getElementById("message");
+  var user = userInput.value.trim();
+  var pass = passInput.value;
+
+  if (user === "" && pass === "") {
+    showError("Please enter your username and password.", userInput);
+  } else if (user === "") {
+    showError("Please enter your username.", userInput);
+  } else if (pass === "") {
+    showError("Please enter your password.", passInput);
+  } else if (user !== "TSHS") {
+    showError("Username not found. Please check and try again.", userInput);
+  } else if (pass !== "1234") {
+    showError("Wrong password. Please try again.", passInput);
+    passInput.value = "";
   } else {
-    alert("Invalid Username or Password");
+    message.className = "success";
+    message.textContent = "Login successful! Redirecting...";
+    setTimeout(function () {
+      window.location.href = "ccc.html";
+    }, 1200);
   }
 
   return false;
