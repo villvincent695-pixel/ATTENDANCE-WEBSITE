@@ -2,84 +2,197 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>QR Attendance System - Advanced</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Attendance System</title>
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+if (typeof Html5QrcodeScanner === "undefined") {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script>');
+}
+</script>
 
 <style>
+:root { --deep:#2c3e50; --teal:#2B7A78; --mint:#3AAFA9; --pale:#DEF2F1; }
+* { box-sizing: border-box; }
+
 body {
-  font-family: Courier;
+  font-family: Courier, monospace;
+  min-height: 100vh;
+  background-color: #70c6ea;
   background-image: url("logo5.jpg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-attachment: fixed;
   margin: 0;
   text-align: center;
-  background-size: 75vh;
+  color: #17252A;
 }
 
-#scanMessage { font-weight: bold; margin: 10px; font-size: 18px; }
-.success { color: green; }
-.error { color: red; }
+/* HEADER */
+header {
+  position: relative;
+  background: linear-gradient(135deg, #2c3e50, #1f2d3a);
+  color: white;
+  padding: 34px 70px 26px 20px;
+  border-bottom: 4px solid var(--mint);
+}
+header h1 { margin: 0; font-size: clamp(1.7rem, 7vw, 2.6rem); letter-spacing: 2px; }
+header p { margin: 8px 0 0; color: var(--pale); font-size: clamp(.9rem, 3.4vw, 1.1rem); letter-spacing: 1px; }
+
+/* PROFILE MENU */
+.profile { position: absolute; top: 16px; right: 16px; }
+.profile-btn {
+  width: 46px; height: 46px; border-radius: 50%; margin: 0; padding: 0;
+  background: var(--mint); color: white; font-size: 20px; font-weight: bold;
+  border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,.3);
+}
+.menu {
+  display: none; position: absolute; right: 0; top: 56px; width: 230px;
+  background: white; color: #17252A; border-radius: 14px; text-align: left;
+  box-shadow: 0 12px 30px rgba(0,0,0,.35); overflow: hidden; z-index: 10;
+}
+.menu.open { display: block; }
+.menu-head { padding: 16px; background: var(--pale); border-bottom: 1px solid #cfe6e5; }
+.menu-head b { display: block; font-size: 1.05rem; }
+.menu-head span { font-size: .85rem; color: #24605e; }
+.menu a, .menu button.item {
+  display: block; width: 100%; margin: 0; padding: 13px 16px; border: none; border-radius: 0;
+  background: white; color: #17252A; font: inherit; font-weight: bold; text-align: left;
+  text-decoration: none; cursor: pointer;
+}
+.menu a:hover, .menu button.item:hover { background: var(--pale); }
+.menu button.item.out { color: #b91c1c; }
+.menu button.item.out:hover { background: #fde2e2; }
+
+/* LAYOUT */
+main { max-width: 900px; margin: 0 auto; padding: 22px 14px 40px; }
+.card {
+  background: rgba(255,255,255,.88); border-radius: 18px; padding: 20px;
+  margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,.25);
+}
+.card h3 { margin: 0 0 14px; font-size: 1.15rem; }
+
+/* MODE */
+.toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 460px; margin: 0 auto; }
+.mode-btn {
+  width: 100%; margin: 0; padding: 14px 6px; font-size: 1rem; font-weight: bold;
+  border-radius: 12px; background: white; border: 3px solid; transition: .2s;
+}
+.mode-btn.in { color: #166534; border-color: #2ECC71; }
+.mode-btn.out { color: #1d4ed8; border-color: #3b82f6; }
+.mode-btn.in.active { background: #2ECC71; color: white; box-shadow: 0 6px 14px rgba(46,204,113,.5); }
+.mode-btn.out.active { background: #3b82f6; color: white; box-shadow: 0 6px 14px rgba(59,130,246,.5); }
+#modeLabel {
+  display: inline-block; margin: 16px 0 0; padding: 8px 18px; font-size: 1rem;
+  border-radius: 999px; background: var(--pale); border: 2px solid var(--mint); color: #17252A;
+}
+
+/* SCANNER */
+#scanMessage {
+  min-height: 44px; margin: 0 auto 14px; padding: 10px 14px; max-width: 520px;
+  border-radius: 10px; font-weight: bold; font-size: 1.05rem; background: #f1f5f4; color: #4b5563;
+}
+#scanMessage.success { background: #d4f7df; color: #14632e; }
+#scanMessage.error { background: #fde2e2; color: #9b1c1c; }
+#scanMessage.warn { background: #fef3c7; color: #92400e; }
 
 #reader {
-  width: 300px;
-  margin: auto;
-  background: white;
-  padding: 10px;
-  border-radius: 10px;
+  width: min(100%, 540px); margin: auto; padding: 12px;
+  background: white; border: 4px solid var(--mint); border-radius: 18px;
+  box-shadow: 0 0 0 6px rgba(58,175,169,.25);
 }
-
-table {
-  margin: 20px auto;
-  width: 90%;
-  border-collapse: collapse;
-  background: white;
+#reader video { border-radius: 10px; }
+#reader button {
+  background: var(--teal); color: white; border: none; border-radius: 8px;
+  padding: 10px 16px; margin: 6px; font-family: inherit; font-weight: bold; cursor: pointer;
 }
+#reader a { color: var(--teal); }
+#reader select { padding: 8px; border-radius: 6px; font-family: inherit; }
 
-th { background: #5482e6; color: white; padding: 10px; }
-td { border: 1px solid #ddd; padding: 8px; }
+.hint { max-width: 520px; margin: 14px auto 0; font-size: .85rem; color: #4b5563; }
 
-.present { background: #2ECC71; color: #166534; font-weight: bold; }
-.late { background: darkgoldenrod; color: yellow; font-weight: bold; }
-.absent { background: #fecaca; color: #7f1d1d; font-weight: bold; }
+/* TABLE */
+.table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #cfe6e5; }
+table { width: 100%; min-width: 560px; border-collapse: collapse; background: white; margin: 0; }
+th { background: var(--teal); color: white; padding: 13px 10px; font-size: .95rem; }
+td { padding: 11px 10px; border-bottom: 1px solid #e5eeee; font-size: .92rem; }
+tr:nth-child(even) td { background: #f5fbfa; }
+td:first-child { text-align: left; font-weight: bold; }
+td.present, td.late, td.absent { font-weight: bold; }
+tr td.present { background: #bff0d3; color: #166534; }
+tr td.late { background: #fde68a; color: #92400e; }
+tr td.absent { background: #fecaca; color: #7f1d1d; }
 
-button {
-  padding: 10px 20px;
-  background: green;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  margin: 5px;
-  cursor: pointer;
+/* BUTTONS */
+.actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+button.action {
+  flex: 1; min-width: 190px; padding: 14px 18px; margin: 0; border: none; border-radius: 12px;
+  font-family: inherit; font-size: 1rem; font-weight: bold; color: white; cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
 }
-
-.logout {
-  background: red;
-}
+button.action:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,.3); }
+.absentBtn { background: linear-gradient(135deg, #dc2626, #f87171); }
+.exportBtn { background: linear-gradient(135deg, var(--teal), var(--mint)); }
+button { cursor: pointer; font-family: inherit; }
 </style>
 </head>
 
 <body>
 
-<h2>QR Attendance System (Advanced)</h2>
+<header>
+  <h1>THS Annex</h1>
+  <p>QR Attendance System</p>
 
-<button class="inBtn" onclick="setMode('in')">🟢 Time In</button>
-<button class="outBtn" onclick="setMode('out')">🔵 Time Out</button>
-<h3 id="modeLabel">Mode: Time In</h3>
+  <div class="profile">
+    <button class="profile-btn" onclick="toggleMenu(event)" aria-label="Profile menu">&#128100;</button>
+    <div class="menu" id="profileMenu">
+      <div class="menu-head"><b>TSHS</b><span>THS Annex Attendance</span></div>
+      <a href="https://quickchart.io/qr-code-api/" target="_blank" rel="noopener">➕ Create QR Code</a>
+      <button class="item out" onclick="logout()">🚪 Logout</button>
+    </div>
+  </div>
+</header>
 
-<div id="scanMessage"></div>
-<div id="reader"></div>
+<main>
 
-<table id="attendanceTable">
-<tr>
-  <th>Student Name</th>
-  <th>Date</th>
-  <th>Time In</th>
-  <th>Time Out</th>
-  <th>Status</th>
-</tr>
-</table>
+  <div class="card">
+    <h3>Attendance Mode</h3>
+    <div class="toggle">
+      <button class="mode-btn in active" id="inBtn" onclick="setMode('in')">🟢 Time In</button>
+      <button class="mode-btn out" id="outBtn" onclick="setMode('out')">🔵 Time Out</button>
+    </div>
+    <h4 id="modeLabel">Mode: Time In</h4>
+  </div>
 
-<button onclick="markAllAbsent()">Mark Unscanned as Absent</button>
-<button onclick="exportToCSV()">Export to Excel</button>
-<button class="logout" onclick="logout()">Logout</button>
+  <div class="card">
+    <h3>Scan QR Code</h3>
+    <div id="scanMessage">Ready to scan</div>
+    <div id="reader"></div>
+    <p class="hint">Tap <b>Request Camera Permissions</b>, then allow camera access. The camera only works on https:// or localhost.</p>
+  </div>
+
+  <div class="card">
+    <h3>Attendance Record</h3>
+    <div class="table-wrap">
+      <table id="attendanceTable">
+        <tr>
+          <th>Student Name</th>
+          <th>Date</th>
+          <th>Time In</th>
+          <th>Time Out</th>
+          <th>Status</th>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card actions">
+    <button class="action absentBtn" onclick="markAllAbsent()">Mark Unscanned as Absent</button>
+    <button class="action exportBtn" onclick="exportToCSV()">Export to Excel</button>
+  </div>
+
+</main>
 
 <script>
 /* =======================
@@ -99,7 +212,20 @@ function setMode(m){
   mode=m;
   document.getElementById("modeLabel").innerText =
     mode==="in" ? "Mode: Time In" : "Mode: Time Out";
+  document.getElementById("inBtn").classList.toggle("active", m==="in");
+  document.getElementById("outBtn").classList.toggle("active", m==="out");
 }
+
+/* =======================
+   PROFILE MENU
+======================= */
+function toggleMenu(e){
+  e.stopPropagation();
+  document.getElementById("profileMenu").classList.toggle("open");
+}
+document.addEventListener("click",()=>{
+  document.getElementById("profileMenu").classList.remove("open");
+});
 
 /* =======================
    SOUND
@@ -202,17 +328,21 @@ function loadAttendance(){
 /* =======================
    SCAN LOGIC
 ======================= */
+function say(text,type){
+  let msg=document.getElementById("scanMessage");
+  msg.innerText=text;
+  msg.className=type;
+}
+
 function onScanSuccess(decodedText){
   if(scanLocked) return;
   scanLocked=true;
 
-  let msg=document.getElementById("scanMessage");
   let table=document.getElementById("attendanceTable");
   let student=students[decodedText];
 
   if(!student){
-    msg.innerText="❌ Unknown QR";
-    msg.className="error";
+    say("❌ Unknown QR","error");
     beep(300,200);
     unlock(); return;
   }
@@ -225,18 +355,18 @@ function onScanSuccess(decodedText){
   for(let i=1;i<table.rows.length;i++){
     if(table.rows[i].cells[0].innerText===name){
       if(mode==="in"){
-        msg.innerText="⚠ Already Timed In";
+        say("⚠ "+name+" already timed in","warn");
         beep(300,200);
         unlock(); return;
       }
       if(mode==="out"){
         if(table.rows[i].cells[3].innerText!==""){
-          msg.innerText="⚠ Already Timed Out";
+          say("⚠ "+name+" already timed out","warn");
           beep(300,200);
           unlock(); return;
         }
         table.rows[i].cells[3].innerText=timeStr;
-        msg.innerText="⏰ Time Out Recorded";
+        say("⏰ Time out recorded: "+name,"success");
         beep(900,150);
         saveAttendance();
         unlock(); return;
@@ -253,11 +383,11 @@ function onScanSuccess(decodedText){
     row.insertCell(3).innerText="";
     row.insertCell(4).innerText=status;
     row.cells[4].className=status.toLowerCase();
-    msg.innerText="✅ Time In Success ("+status+")";
+    say("✅ Time in success: "+name+" ("+status+")","success");
     beep(900,150);
     saveAttendance();
   } else {
-    msg.innerText="⚠ Must Time In first";
+    say("⚠ Must time in first","warn");
     beep(300,200);
   }
   unlock();
@@ -307,10 +437,16 @@ function logout(){
    INIT
 ======================= */
 loadAttendance();
-new Html5QrcodeScanner("reader",{fps:10,qrbox:250}).render(onScanSuccess);
+if (typeof Html5QrcodeScanner === "undefined") {
+  document.getElementById("reader").innerText =
+    "Scanner could not load. Check your internet connection and refresh the page.";
+} else {
+  new Html5QrcodeScanner("reader",{
+    fps:10,
+    qrbox:(w,h)=>{ let s=Math.floor(Math.min(w,h)*0.8); return {width:s,height:s}; }
+  }).render(onScanSuccess);
+}
 </script>
-
-<h4> <a href="https://quickchart.io/qr-code-api/">For new students create your QR code here.</h4>
 
 </body>
 </html>
