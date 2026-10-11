@@ -4,47 +4,118 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>About</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
 
   <style>
+    :root {
+      --deep: #17252A;
+      --teal: #2B7A78;
+      --mint: #3AAFA9;
+      --pale: #DEF2F1;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: Lato;
-      height: 100vh;
-      background:  #2B7A78;
+      min-height: 100vh;
+      font-family: 'Lato', sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 15% 20%, #3AAFA9 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, #17252A 0%, transparent 55%),
+        linear-gradient(135deg, #2B7A78, #1d5654);
+      background-attachment: fixed;
     }
 
+    /* QR-style dot grid */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(222, 242, 241, 0.28) 2px, transparent 2.5px);
+      background-size: 26px 26px;
+      -webkit-mask-image: radial-gradient(circle at center, transparent 20%, #000 90%);
+      mask-image: radial-gradient(circle at center, transparent 20%, #000 90%);
+      pointer-events: none;
+    }
+
+    /* Soft glowing blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.55;
+      pointer-events: none;
+      animation: drift 14s ease-in-out infinite alternate;
+    }
+    .blob.one { width: 260px; height: 260px; background: #DEF2F1; top: -60px; right: -40px; }
+    .blob.two { width: 300px; height: 300px; background: #3AAFA9; bottom: -90px; left: -70px; animation-delay: -6s; }
+
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(30px, 40px) scale(1.15); }
+    }
+
+    /* Frosted glass card */
     .about-box {
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      max-width: 1000px;
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 700px;
+      padding: 36px 30px;
       text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.88);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
     }
 
     .about-box h1 {
-      margin-bottom: 15px;
-      color: #2a5298;
+      margin: 0 0 8px;
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--deep);
+    }
+
+    .about-box .line {
+      width: 60px;
+      height: 4px;
+      margin: 0 auto 20px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--teal), var(--mint));
     }
 
     .about-box p {
-      font-size: 30px;
-      color: #2B7A78;
-      line-height: 1.6;
+      margin: 0;
+      font-size: clamp(16px, 2.5vw, 19px);
+      line-height: 1.75;
+      color: #24605e;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .blob { animation: none; }
     }
   </style>
 </head>
 
 <body>
+  <div class="blob one"></div>
+  <div class="blob two"></div>
 
   <div class="about-box">
     <h1>About</h1>
+    <div class="line"></div>
     <p>
-      It helps monitor student attendance efficiently and accurately. The system allows transferees to create their own QR codes for scanning, making the attendance process faster and more organized. It reduces manual recording and minimizes errors in tracking attendance. This web-based solution provides a convenient and reliable way for both students and teachers to manage daily attendance </p>
+      It helps monitor student attendance efficiently and accurately. The system allows transferees to create their own QR codes for scanning, making the attendance process faster and more organized. It reduces manual recording and minimizes errors in tracking attendance. This web-based solution provides a convenient and reliable way for both students and teachers to manage daily attendance.
+    </p>
   </div>
-
 </body>
 </html>
